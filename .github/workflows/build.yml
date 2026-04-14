@@ -1,0 +1,48 @@
+name: Build Eli IPA (Unsigned)
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: macos-14
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Set up Xcode
+      run: sudo xcode-select -switch /Applications/Xcode_15.4.app
+
+    - name: Inject HF Token
+      run: |
+        sed -i '' "s/YOUR_HF_TOKEN_HERE/${{ secrets.HF_TOKEN }}/g" Eli/ViewController.swift
+
+    - name: Inject Firebase Config
+      run: |
+        # Copy GoogleService-Info.plist from secrets if you stored it as base64
+        echo "${{ secrets.GOOGLE_SERVICE_BASE64 }}" | base64 --decode > Eli/GoogleService-Info.plist
+
+    - name: Build unsigned IPA
+      run: |
+        xcodebuild -project Eli.xcodeproj \
+          -scheme Eli \
+          -sdk iphoneos \
+          -configuration Release \
+          CODE_SIGN_IDENTITY="" \
+          CODE_SIGNING_REQUIRED=NO \
+          CODE_SIGNING_ALLOWED=NO \
+          -archivePath build/Eli.xcarchive \
+          archive
+        
+        mkdir -p build/Payload
+        cp -r build/Eli.xcarchive/Products/Applications/Eli.app build/Payload/
+        cd build && zip -r Eli.ipa Payload/ && cd ..
+
+    - name: Upload IPA
+      uses: actions/upload-artifact@v4
+      with:
+        name: Eli-Unsigned.ipa
+        path: build/Eli.ipa
+        retention-days: 7
