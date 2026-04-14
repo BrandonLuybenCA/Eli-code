@@ -1,0 +1,154 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 56;
+	objects = {
+		/* Begin PBXFileReference section */
+		A1000001 /* Eli.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Eli.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		A1000002 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
+		A1000003 /* SceneDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SceneDelegate.swift; sourceTree = "<group>"; };
+		A1000004 /* AuthViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthViewController.swift; sourceTree = "<group>"; };
+		A1000005 /* ViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ViewController.swift; sourceTree = "<group>"; };
+		A1000006 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		A1000007 /* GoogleService-Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = "GoogleService-Info.plist"; sourceTree = "<group>"; };
+		A1000008 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		A1000009 /* EliWidget.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EliWidget.swift; sourceTree = "<group>"; };
+		A1000010 /* EliWidget.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = EliWidget.entitlements; sourceTree = "<group>"; };
+		A1000011 /* NotificationService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotificationService.swift; sourceTree = "<group>"; };
+		/* End PBXFileReference section */
+
+		/* Begin PBXGroup section */
+		A1000012 = {
+			isa = PBXGroup;
+			children = (
+				A1000013 /* Eli */,
+				A1000014 /* EliWidget */,
+				A1000015 /* NotificationServiceExtension */,
+				A1000016 /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		A1000013 /* Eli */ = {
+			isa = PBXGroup;
+			children = (
+				A1000002 /* AppDelegate.swift */,
+				A1000003 /* SceneDelegate.swift */,
+				A1000004 /* AuthViewController.swift */,
+				A1000005 /* ViewController.swift */,
+				A1000006 /* Info.plist */,
+				A1000007 /* GoogleService-Info.plist */,
+				A1000008 /* Assets.xcassets */,
+			);
+			path = Eli;
+			sourceTree = "<group>";
+		};
+		A1000014 /* EliWidget */ = {
+			isa = PBXGroup;
+			children = (
+				A1000009 /* EliWidget.swift */,
+				A1000010 /* EliWidget.entitlements */,
+				A1000017 /* Info.plist */,
+			);
+			path = EliWidget;
+			sourceTree = "<group>";
+		};
+		A1000015 /* NotificationServiceExtension */ = {
+			isa = PBXGroup;
+			children = (
+				A1000011 /* NotificationService.swift */,
+				A1000018 /* Info.plist */,
+			);
+			path = NotificationServiceExtension;
+			sourceTree = "<group>";
+		};
+		A1000016 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				A1000001 /* Eli.app */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		/* End PBXGroup section */
+
+		/* Begin PBXNativeTarget section */
+		A1000019 /* Eli */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = A1000020;
+			buildPhases = (
+				A1000021 /* Sources */,
+				A1000022 /* Frameworks */,
+				A1000023 /* Resources */,
+			);
+			dependencies = (
+			);
+			name = Eli;
+			productName = Eli;
+			productReference = A1000001 /* Eli.app */;
+			productType = "com.apple.product-type.application";
+		};
+		/* End PBXNativeTarget section */
+
+		/* Begin XCBuildConfiguration section */
+		A1000024 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_STYLE = Manual;
+				CODE_SIGN_IDENTITY = "";
+				CODE_SIGNING_REQUIRED = NO;
+				CODE_SIGNING_ALLOWED = NO;
+				CURRENT_PROJECT_VERSION = 1;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = Eli/Info.plist;
+				IPHONEOS_DEPLOYMENT_TARGET = 16.0;
+				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks";
+				MARKETING_VERSION = 1.0.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.eli.app;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		A1000025 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_STYLE = Manual;
+				CODE_SIGN_IDENTITY = "";
+				CODE_SIGNING_REQUIRED = NO;
+				CODE_SIGNING_ALLOWED = NO;
+				CURRENT_PROJECT_VERSION = 1;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = Eli/Info.plist;
+				IPHONEOS_DEPLOYMENT_TARGET = 16.0;
+				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks";
+				MARKETING_VERSION = 1.0.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.eli.app;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
+		/* End XCBuildConfiguration section */
+
+		/* Begin XCConfigurationList section */
+		A1000020 /* Build configuration list for PBXNativeTarget "Eli" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				A1000024 /* Debug */,
+				A1000025 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		/* End XCConfigurationList section */
+	};
+	rootObject = A1000012 /* Project object */;
+}
