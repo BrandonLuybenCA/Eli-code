@@ -1,4 +1,4 @@
-name: Build Eli IPA (Unsigned)
+name: Build Eli IPA and Create Release
 
 on:
   push:
@@ -19,7 +19,7 @@ jobs:
       run: |
         sed -i '' "s/YOUR_HF_TOKEN_HERE/${{ secrets.HF_TOKEN }}/g" ViewController.swift
 
-    - name: Create Firebase Config from Secret (if using)
+    - name: Create Firebase Config from Secret (optional)
       run: |
         if [ -n "${{ secrets.GOOGLE_SERVICE_BASE64 }}" ]; then
           echo '${{ secrets.GOOGLE_SERVICE_BASE64 }}' | base64 --decode > GoogleService-Info.plist
@@ -41,38 +41,12 @@ jobs:
         cp -r build/Eli.xcarchive/Products/Applications/Eli.app build/Payload/
         cd build && zip -r Eli.ipa Payload/ && cd ..
 
-    - name: Upload IPA to Gofile.io
-      id: gofile
-      run: |
-        # Get a free server from Gofile
-        server_response=$(curl -s https://api.gofile.io/servers)
-        server=$(echo $server_response | grep -o '"name":"[^"]*"' | head -1 | cut -d'"' -f4)
-        echo "Using server: $server"
-        
-        # Upload the IPA
-        upload_response=$(curl -s -F "file=@build/Eli.ipa" "https://${server}.gofile.io/uploadFile")
-        download_url=$(echo $upload_response | grep -o '"downloadPage":"[^"]*"' | cut -d'"' -f4)
-        echo "GOFILE_URL=$download_url" >> $GITHUB_ENV
-        echo "$download_url" > gofile_url.txt
-
-    - name: Display Gofile URL
-      run: |
-        echo "✅ IPA uploaded to Gofile:"
-        echo "${{ env.GOFILE_URL }}"
-        echo ""
-        echo "You can now use FileGrabber.net with this URL:"
-        echo "${{ env.GOFILE_URL }}"
-
-    - name: Upload URL as artifact (fast download)
-      uses: actions/upload-artifact@v4
+    - name: Create GitHub Release and Upload IPA
+      uses: softprops/action-gh-release@v1
       with:
-        name: gofile-url.txt
-        path: gofile_url.txt
-        retention-days: 1
-
-    - name: Upload IPA as artifact (backup)
-      uses: actions/upload-artifact@v4
-      with:
-        name: Eli-Unsigned.ipa
-        path: build/Eli.ipa
-        retention-days: 1
+        tag_name: "latest"
+        name: "Latest Eli IPA"
+        files: build/Eli.ipa
+        prerelease: true
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
