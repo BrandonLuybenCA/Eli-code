@@ -41,9 +41,35 @@ jobs:
         cp -r build/Eli.xcarchive/Products/Applications/Eli.app build/Payload/
         cd build && zip -r Eli.ipa Payload/ && cd ..
 
-    - name: Upload IPA
+    - name: Upload IPA to Catbox.moe
+      id: catbox
+      run: |
+        # Catbox API upload
+        response=$(curl -s -F "reqtype=fileupload" -F "fileToUpload=@build/Eli.ipa" https://catbox.moe/user/api.php)
+        echo "CATBOX_URL=$response" >> $GITHUB_ENV
+        echo "Uploaded to: $response"
+        
+        # Save URL to a file for later steps (optional)
+        echo "$response" > catbox_url.txt
+
+    - name: Display Catbox URL
+      run: |
+        echo "✅ IPA uploaded to Catbox:"
+        echo "${{ env.CATBOX_URL }}"
+        echo ""
+        echo "You can now use FileGrabber.net with this URL:"
+        echo "${{ env.CATBOX_URL }}"
+
+    - name: Upload IPA as artifact (fallback)
       uses: actions/upload-artifact@v4
       with:
         name: Eli-Unsigned.ipa
         path: build/Eli.ipa
-        retention-days: 7
+        retention-days: 1   # short retention because you'll use Catbox
+
+    - name: Save Catbox URL as artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: catbox-url.txt
+        path: catbox_url.txt
+        retention-days: 1
