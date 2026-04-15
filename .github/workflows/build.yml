@@ -1,14 +1,13 @@
 name: Build IPA & Temp Download Tunnel
 
 on:
-  workflow_dispatch:   # manual trigger only
+  workflow_dispatch:
 
 jobs:
   build-and-serve:
     runs-on: macos-14
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
       - name: Set up Xcode
         run: sudo xcode-select -switch /Applications/Xcode_15.4.app
@@ -28,9 +27,27 @@ jobs:
             CODE_SIGNING_ALLOWED=NO \
             -archivePath build/Eli.xcarchive \
             archive
+          
+          # Create Payload folder
           mkdir -p build/Payload
           cp -r build/Eli.xcarchive/Products/Applications/Eli.app build/Payload/
+          
+          # 🔧 Ensure Info.plist exists inside the .app bundle
+          if [ ! -f "build/Payload/Eli.app/Info.plist" ]; then
+            echo "⚠️ Info.plist missing! Copying from root..."
+            cp Info.plist build/Payload/Eli.app/Info.plist
+          fi
+          
+          # Create IPA
           cd build && zip -r Eli.ipa Payload/ && cd ..
+
+      - name: Verify IPA contents
+        run: |
+          unzip -l build/Eli.ipa | grep -E "Payload/Eli.app/Info.plist" || {
+            echo "❌ Info.plist still missing in IPA"
+            exit 1
+          }
+          echo "✅ IPA contains Info.plist"
 
       - name: Create server directory and copy IPA
         run: |
@@ -95,9 +112,7 @@ jobs:
           echo "${{ env.TUNNEL_URL }}/Eli.ipa"
           echo "==========================================="
           echo "This link is valid for approximately 20 minutes."
-          echo "Open it on your iPhone, download the IPA, then import into Portal."
+          echo "After downloading, use ipa-sign.com or Portal to sign."
 
       - name: Keep runner alive for 20 minutes
-        run: |
-          echo "Keeping runner alive for 20 minutes..."
-          sleep 1200
+        run: sleep 1200
