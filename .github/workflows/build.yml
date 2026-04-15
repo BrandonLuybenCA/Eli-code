@@ -17,12 +17,13 @@ jobs:
 
     - name: Inject HF Token
       run: |
-        sed -i '' "s/YOUR_HF_TOKEN_HERE/${{ secrets.HF_TOKEN }}/g" Eli/ViewController.swift
+        sed -i '' "s/YOUR_HF_TOKEN_HERE/${{ secrets.HF_TOKEN }}/g" ViewController.swift
 
-    - name: Inject Firebase Config
+    - name: Create Firebase Config from Secret (if using)
       run: |
-        # Copy GoogleService-Info.plist from secrets if you stored it as base64
-        echo "${{ secrets.GOOGLE_SERVICE_BASE64 }}" | base64 --decode > Eli/GoogleService-Info.plist
+        if [ -n "${{ secrets.GOOGLE_SERVICE_BASE64 }}" ]; then
+          echo '${{ secrets.GOOGLE_SERVICE_BASE64 }}' | base64 --decode > GoogleService-Info.plist
+        fi
 
     - name: Build unsigned IPA
       run: |
