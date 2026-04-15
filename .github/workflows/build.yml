@@ -1,12 +1,9 @@
-name: Build Eli IPA and Create Release
+name: Build Eli IPA and Upload to oshi.at
 
 on:
   push:
     branches: [ main ]
   workflow_dispatch:
-
-permissions:
-  contents: write
 
 jobs:
   build:
@@ -38,11 +35,34 @@ jobs:
         cp -r build/Eli.xcarchive/Products/Applications/Eli.app build/Payload/
         cd build && zip -r Eli.ipa Payload/ && cd ..
 
-    - name: Create GitHub Release and Upload IPA
-      uses: softprops/action-gh-release@v1
+    - name: Upload IPA to oshi.at
+      id: upload
+      run: |
+        # Upload file, get direct link
+        response=$(curl -s -F "file=@build/Eli.ipa" https://oshi.at)
+        # Extract the download URL
+        url=$(echo "$response" | grep -o 'https://[^ ]*' | head -1)
+        echo "OSHI_URL=$url" >> $GITHUB_ENV
+        echo "$url" > oshi_url.txt
+        echo "Upload successful: $url"
+
+    - name: Display Download URL
+      run: |
+        echo "✅ IPA uploaded to oshi.at"
+        echo "Direct download link: ${{ env.OSHI_URL }}"
+        echo ""
+        echo "Use this URL in FileGrabber.net or your browser"
+
+    - name: Save URL as artifact (tiny, fast)
+      uses: actions/upload-artifact@v4
       with:
-        tag_name: "latest"
-        name: "Latest Eli IPA"
-        files: build/Eli.ipa
-        prerelease: true
-        token: ${{ secrets.RELEASE_TOKEN }}
+        name: download-link.txt
+        path: oshi_url.txt
+        retention-days: 1
+
+    - name: Backup IPA as artifact (optional)
+      uses: actions/upload-artifact@v4
+      with:
+        name: Eli-Unsigned.ipa
+        path: build/Eli.ipa
+        retention-days: 1
