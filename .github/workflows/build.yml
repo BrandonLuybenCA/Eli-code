@@ -1,4 +1,4 @@
-name: Build Eli IPA and Upload to file.io
+name: Build Eli IPA and Upload to tmp.ninja
 
 on:
   push:
@@ -35,26 +35,27 @@ jobs:
         cp -r build/Eli.xcarchive/Products/Applications/Eli.app build/Payload/
         cd build && zip -r Eli.ipa Payload/ && cd ..
 
-    - name: Upload IPA to file.io
+    - name: Upload IPA to tmp.ninja
       id: upload
       run: |
-        response=$(curl -s -F "file=@build/Eli.ipa" https://file.io)
-        url=$(echo "$response" | grep -o '"link":"[^"]*"' | cut -d'"' -f4)
-        echo "FILEIO_URL=$url" >> $GITHUB_ENV
-        echo "$url" > fileio_url.txt
+        response=$(curl -s -F "file=@build/Eli.ipa" https://tmp.ninja/upload.php)
+        # response is just the URL
+        url=$(echo "$response" | tr -d ' \n\r')
+        echo "TMP_URL=$url" >> $GITHUB_ENV
+        echo "$url" > tmp_url.txt
         echo "Upload successful: $url"
 
     - name: Display Download URL
       run: |
-        echo "✅ IPA uploaded to file.io"
-        echo "Direct download link: ${{ env.FILEIO_URL }}"
-        echo "Note: This link works only once. After downloading, you'll need to re-run the workflow for a new link."
+        echo "✅ IPA uploaded to tmp.ninja"
+        echo "Direct download link: ${{ env.TMP_URL }}"
+        echo "This link works until the file is deleted (usually 30 days of inactivity)."
 
     - name: Save URL as artifact
       uses: actions/upload-artifact@v4
       with:
         name: download-link.txt
-        path: fileio_url.txt
+        path: tmp_url.txt
         retention-days: 1
 
     - name: Backup IPA as artifact
