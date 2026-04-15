@@ -1,13 +1,14 @@
 name: Build IPA & Temp Download Tunnel
 
 on:
-  workflow_dispatch:
+  workflow_dispatch:   # manual trigger only
 
 jobs:
   build-and-serve:
     runs-on: macos-14
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout code
+        uses: actions/checkout@v4
 
       - name: Set up Xcode
         run: sudo xcode-select -switch /Applications/Xcode_15.4.app
@@ -16,8 +17,12 @@ jobs:
         run: |
           sed -i '' "s/YOUR_HF_TOKEN_HERE/${{ secrets.HF_TOKEN }}/g" ViewController.swift
 
-      - name: Build unsigned IPA
+      - name: Build unsigned IPA (fixed)
         run: |
+          # Clean previous builds
+          xcodebuild clean -project Eli.xcodeproj -scheme Eli || true
+
+          # Archive the app
           xcodebuild -project Eli.xcodeproj \
             -scheme Eli \
             -sdk iphoneos \
@@ -27,27 +32,53 @@ jobs:
             CODE_SIGNING_ALLOWED=NO \
             -archivePath build/Eli.xcarchive \
             archive
-          
-          # Create Payload folder
-          mkdir -p build/Payload
-          cp -r build/Eli.xcarchive/Products/Applications/Eli.app build/Payload/
-          
-          # 🔧 Ensure Info.plist exists inside the .app bundle
-          if [ ! -f "build/Payload/Eli.app/Info.plist" ]; then
-            echo "⚠️ Info.plist missing! Copying from root..."
-            cp Info.plist build/Payload/Eli.app/Info.plist
-          fi
-          
-          # Create IPA
-          cd build && zip -r Eli.ipa Payload/ && cd ..
 
-      - name: Verify IPA contents
-        run: |
-          unzip -l build/Eli.ipa | grep -E "Payload/Eli.app/Info.plist" || {
-            echo "❌ Info.plist still missing in IPA"
+          # Path to the .app bundle inside the archive
+          APP_PATH="build/Eli.xcarchive/Products/Applications/Eli.app"
+          if [ ! -d "$APP_PATH" ]; then
+            echo "❌ .app bundle not found at expected location"
+            exit 1
+          fi
+
+          # Force copy Info.plist from repo root into the .app if missing
+          if [ ! -f "$APP_PATH/Info.plist" ]; then
+            echo "⚠️ Info.plist missing in .app, copying from repo root..."
+            if [ -f "Info.plist" ]; then
+              cp Info.plist "$APP_PATH/Info.plist"
+            else
+              echo "❌ No Info.plist found in repository root"
+              exit 1
+            fi
+          fi
+
+          # Validate Info.plist syntax
+          plutil -lint "$APP_PATH/Info.plist" || {
+            echo "❌ Invalid Info.plist format"
             exit 1
           }
-          echo "✅ IPA contains Info.plist"
+
+          # Create Payload folder and copy .app into it
+          mkdir -p build/Payload
+          cp -R "$APP_PATH" build/Payload/
+
+          # Final verification
+          if [ ! -f "build/Payload/Eli.app/Info.plist" ]; then
+            echo "❌ Failed to place Info.plist inside Payload/Eli.app/"
+            exit 1
+          fi
+
+          # Create IPA (standard ZIP with Payload folder at root)
+          cd build
+          zip -9 -r Eli.ipa Payload/
+          cd ..
+
+          # Verify IPA structure
+          echo "Verifying IPA contents..."
+          unzip -l build/Eli.ipa | grep "Payload/Eli.app/Info.plist" || {
+            echo "❌ IPA validation failed: Info.plist not found in the IPA"
+            exit 1
+          }
+          echo "✅ IPA is valid and contains Info.plist"
 
       - name: Create server directory and copy IPA
         run: |
