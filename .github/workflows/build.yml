@@ -41,35 +41,38 @@ jobs:
         cp -r build/Eli.xcarchive/Products/Applications/Eli.app build/Payload/
         cd build && zip -r Eli.ipa Payload/ && cd ..
 
-    - name: Upload IPA to Catbox.moe
-      id: catbox
+    - name: Upload IPA to Gofile.io
+      id: gofile
       run: |
-        # Catbox API upload
-        response=$(curl -s -F "reqtype=fileupload" -F "fileToUpload=@build/Eli.ipa" https://catbox.moe/user/api.php)
-        echo "CATBOX_URL=$response" >> $GITHUB_ENV
-        echo "Uploaded to: $response"
+        # Get a free server from Gofile
+        server_response=$(curl -s https://api.gofile.io/servers)
+        server=$(echo $server_response | grep -o '"name":"[^"]*"' | head -1 | cut -d'"' -f4)
+        echo "Using server: $server"
         
-        # Save URL to a file for later steps (optional)
-        echo "$response" > catbox_url.txt
+        # Upload the IPA
+        upload_response=$(curl -s -F "file=@build/Eli.ipa" "https://${server}.gofile.io/uploadFile")
+        download_url=$(echo $upload_response | grep -o '"downloadPage":"[^"]*"' | cut -d'"' -f4)
+        echo "GOFILE_URL=$download_url" >> $GITHUB_ENV
+        echo "$download_url" > gofile_url.txt
 
-    - name: Display Catbox URL
+    - name: Display Gofile URL
       run: |
-        echo "✅ IPA uploaded to Catbox:"
-        echo "${{ env.CATBOX_URL }}"
+        echo "✅ IPA uploaded to Gofile:"
+        echo "${{ env.GOFILE_URL }}"
         echo ""
         echo "You can now use FileGrabber.net with this URL:"
-        echo "${{ env.CATBOX_URL }}"
+        echo "${{ env.GOFILE_URL }}"
 
-    - name: Upload IPA as artifact (fallback)
+    - name: Upload URL as artifact (fast download)
+      uses: actions/upload-artifact@v4
+      with:
+        name: gofile-url.txt
+        path: gofile_url.txt
+        retention-days: 1
+
+    - name: Upload IPA as artifact (backup)
       uses: actions/upload-artifact@v4
       with:
         name: Eli-Unsigned.ipa
         path: build/Eli.ipa
-        retention-days: 1   # short retention because you'll use Catbox
-
-    - name: Save Catbox URL as artifact
-      uses: actions/upload-artifact@v4
-      with:
-        name: catbox-url.txt
-        path: catbox_url.txt
         retention-days: 1
