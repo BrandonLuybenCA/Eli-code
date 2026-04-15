@@ -1,65 +1,103 @@
-name: Build Eli IPA and Upload to Pixeldrain
+name: Build IPA & Temp Download Tunnel
 
 on:
-  push:
-    branches: [ main ]
-  workflow_dispatch:
+  workflow_dispatch:   # manual trigger only
 
 jobs:
-  build:
+  build-and-serve:
     runs-on: macos-14
-
     steps:
-    - uses: actions/checkout@v4
+      - name: Checkout code
+        uses: actions/checkout@v4
 
-    - name: Set up Xcode
-      run: sudo xcode-select -switch /Applications/Xcode_15.4.app
+      - name: Set up Xcode
+        run: sudo xcode-select -switch /Applications/Xcode_15.4.app
 
-    - name: Inject HF Token
-      run: |
-        sed -i '' "s/YOUR_HF_TOKEN_HERE/${{ secrets.HF_TOKEN }}/g" ViewController.swift
+      - name: Inject HF Token
+        run: |
+          sed -i '' "s/YOUR_HF_TOKEN_HERE/${{ secrets.HF_TOKEN }}/g" ViewController.swift
 
-    - name: Build unsigned IPA
-      run: |
-        xcodebuild -project Eli.xcodeproj \
-          -scheme Eli \
-          -sdk iphoneos \
-          -configuration Release \
-          CODE_SIGN_IDENTITY="" \
-          CODE_SIGNING_REQUIRED=NO \
-          CODE_SIGNING_ALLOWED=NO \
-          -archivePath build/Eli.xcarchive \
-          archive
-        
-        mkdir -p build/Payload
-        cp -r build/Eli.xcarchive/Products/Applications/Eli.app build/Payload/
-        cd build && zip -r Eli.ipa Payload/ && cd ..
+      - name: Build unsigned IPA
+        run: |
+          xcodebuild -project Eli.xcodeproj \
+            -scheme Eli \
+            -sdk iphoneos \
+            -configuration Release \
+            CODE_SIGN_IDENTITY="" \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGNING_ALLOWED=NO \
+            -archivePath build/Eli.xcarchive \
+            archive
+          mkdir -p build/Payload
+          cp -r build/Eli.xcarchive/Products/Applications/Eli.app build/Payload/
+          cd build && zip -r Eli.ipa Payload/ && cd ..
 
-    - name: Upload IPA to Pixeldrain
-      id: upload
-      run: |
-        response=$(curl -s -X PUT -T build/Eli.ipa https://pixeldrain.com/api/file/)
-        url=$(echo "$response" | grep -o '"url":"[^"]*"' | cut -d'"' -f4)
-        echo "PIXELDRAIN_URL=$url" >> $GITHUB_ENV
-        echo "$url" > pixeldrain_url.txt
-        echo "Upload successful: $url"
+      - name: Create server directory and copy IPA
+        run: |
+          mkdir -p serve
+          cp build/Eli.ipa serve/
 
-    - name: Display Download URL
-      run: |
-        echo "✅ IPA uploaded to Pixeldrain"
-        echo "Direct download link: ${{ env.PIXELDRAIN_URL }}"
-        echo "You can download this file repeatedly (no expiration)."
+      - name: Create Node.js server script
+        run: |
+          cat > serve/server.js << 'EOF'
+          const express = require('express');
+          const path = require('path');
+          const app = express();
+          const PORT = 3000;
+          app.use(express.static('.'));
+          app.get('/', (req, res) => {
+            res.send(`
+              <!DOCTYPE html>
+              <html>
+              <head><meta name="viewport" content="width=device-width, initial-scale=1.0"></head>
+              <body style="background:black; color:white; text-align:center; padding:50px; font-family:system-ui;">
+                <h1>🤖 Eli IPA Download</h1>
+                <a href="/Eli.ipa" style="background:#A78BFA; color:white; padding:15px 30px; border-radius:30px; text-decoration:none; display:inline-block;">
+                  📲 Download Eli.ipa
+                </a>
+                <p style="margin-top:30px; font-size:12px;">Tunnel active for ~20 minutes</p>
+              </body>
+              </html>
+            `);
+          });
+          app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+          EOF
 
-    - name: Save URL as artifact
-      uses: actions/upload-artifact@v4
-      with:
-        name: download-link.txt
-        path: pixeldrain_url.txt
-        retention-days: 1
+      - name: Install Node dependencies
+        run: |
+          cd serve
+          npm init -y
+          npm install express
 
-    - name: Backup IPA as artifact
-      uses: actions/upload-artifact@v4
-      with:
-        name: Eli-Unsigned.ipa
-        path: build/Eli.ipa
-        retention-days: 1
+      - name: Start Node server in background
+        run: |
+          cd serve
+          node server.js &
+          echo "SERVER_PID=$!" >> $GITHUB_ENV
+          sleep 2
+
+      - name: Install cloudflared
+        run: brew install cloudflared
+
+      - name: Start Cloudflare tunnel
+        run: |
+          cloudflared tunnel --url http://localhost:3000 --logfile cloudflared.log &
+          echo "TUNNEL_PID=$!" >> $GITHUB_ENV
+          sleep 10
+          URL=$(grep -o 'https://[a-z0-9.-]*\.trycloudflare\.com' cloudflared.log | head -1)
+          echo "TUNNEL_URL=$URL" >> $GITHUB_ENV
+          echo "✅ Tunnel URL: $URL"
+
+      - name: Display download link
+        run: |
+          echo "==========================================="
+          echo "📲 DOWNLOAD YOUR IPA HERE:"
+          echo "${{ env.TUNNEL_URL }}/Eli.ipa"
+          echo "==========================================="
+          echo "This link is valid for approximately 20 minutes."
+          echo "Open it on your iPhone, download the IPA, then import into Portal."
+
+      - name: Keep runner alive for 20 minutes
+        run: |
+          echo "Keeping runner alive for 20 minutes..."
+          sleep 1200
