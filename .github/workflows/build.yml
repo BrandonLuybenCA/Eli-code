@@ -1,4 +1,4 @@
-name: Build Eli IPA and Upload to oshi.at
+name: Build Eli IPA and Upload to file.io
 
 on:
   push:
@@ -35,32 +35,29 @@ jobs:
         cp -r build/Eli.xcarchive/Products/Applications/Eli.app build/Payload/
         cd build && zip -r Eli.ipa Payload/ && cd ..
 
-    - name: Upload IPA to oshi.at
+    - name: Upload IPA to file.io
       id: upload
       run: |
-        # Upload file, get direct link
-        response=$(curl -s -F "file=@build/Eli.ipa" https://oshi.at)
-        # Extract the download URL
-        url=$(echo "$response" | grep -o 'https://[^ ]*' | head -1)
-        echo "OSHI_URL=$url" >> $GITHUB_ENV
-        echo "$url" > oshi_url.txt
+        response=$(curl -s -F "file=@build/Eli.ipa" https://file.io)
+        url=$(echo "$response" | grep -o '"link":"[^"]*"' | cut -d'"' -f4)
+        echo "FILEIO_URL=$url" >> $GITHUB_ENV
+        echo "$url" > fileio_url.txt
         echo "Upload successful: $url"
 
     - name: Display Download URL
       run: |
-        echo "✅ IPA uploaded to oshi.at"
-        echo "Direct download link: ${{ env.OSHI_URL }}"
-        echo ""
-        echo "Use this URL in FileGrabber.net or your browser"
+        echo "✅ IPA uploaded to file.io"
+        echo "Direct download link: ${{ env.FILEIO_URL }}"
+        echo "Note: This link works only once. After downloading, you'll need to re-run the workflow for a new link."
 
-    - name: Save URL as artifact (tiny, fast)
+    - name: Save URL as artifact
       uses: actions/upload-artifact@v4
       with:
         name: download-link.txt
-        path: oshi_url.txt
+        path: fileio_url.txt
         retention-days: 1
 
-    - name: Backup IPA as artifact (optional)
+    - name: Backup IPA as artifact
       uses: actions/upload-artifact@v4
       with:
         name: Eli-Unsigned.ipa
