@@ -1,4 +1,4 @@
-name: Build Eli IPA and Upload to tmp.ninja
+name: Build Eli IPA and Upload to Pixeldrain
 
 on:
   push:
@@ -35,27 +35,26 @@ jobs:
         cp -r build/Eli.xcarchive/Products/Applications/Eli.app build/Payload/
         cd build && zip -r Eli.ipa Payload/ && cd ..
 
-    - name: Upload IPA to tmp.ninja
+    - name: Upload IPA to Pixeldrain
       id: upload
       run: |
-        response=$(curl -s -F "file=@build/Eli.ipa" https://tmp.ninja/upload.php)
-        # response is just the URL
-        url=$(echo "$response" | tr -d ' \n\r')
-        echo "TMP_URL=$url" >> $GITHUB_ENV
-        echo "$url" > tmp_url.txt
+        response=$(curl -s -X PUT -T build/Eli.ipa https://pixeldrain.com/api/file/)
+        url=$(echo "$response" | grep -o '"url":"[^"]*"' | cut -d'"' -f4)
+        echo "PIXELDRAIN_URL=$url" >> $GITHUB_ENV
+        echo "$url" > pixeldrain_url.txt
         echo "Upload successful: $url"
 
     - name: Display Download URL
       run: |
-        echo "✅ IPA uploaded to tmp.ninja"
-        echo "Direct download link: ${{ env.TMP_URL }}"
-        echo "This link works until the file is deleted (usually 30 days of inactivity)."
+        echo "✅ IPA uploaded to Pixeldrain"
+        echo "Direct download link: ${{ env.PIXELDRAIN_URL }}"
+        echo "You can download this file repeatedly (no expiration)."
 
     - name: Save URL as artifact
       uses: actions/upload-artifact@v4
       with:
         name: download-link.txt
-        path: tmp_url.txt
+        path: pixeldrain_url.txt
         retention-days: 1
 
     - name: Backup IPA as artifact
